@@ -156,19 +156,14 @@ function love.gamepadaxis(joystick, axis, value)
     end
 end
 
---- L1 — TAG HUNT ---
+--- L1 — START HUNT | R1 — CANCEL HUNT ---
 local _orig_gamepadpressed = love.gamepadpressed
 
 function love.gamepadpressed(joystick, button)
     if _orig_gamepadpressed then _orig_gamepadpressed(joystick, button) end
-    if button ~= 'leftshoulder' then return end
     if not G or not G.CONTROLLER then return end
 
-    if hunting then
-        hunting = false
-        disarm_r_hold()
-        hunt_notify('Hunt cancelled', G.C.RED)
-    else
+    if button == 'leftshoulder' and not hunting then
         hunting = true
         hunt_notify('Hunting: ' .. get_hunt_desc(), G.C.ORANGE)
 
@@ -182,6 +177,10 @@ function love.gamepadpressed(joystick, button)
         else
             hunt_armed = false
         end
+    elseif button == 'rightshoulder' and hunting then
+        hunting = false
+        disarm_r_hold()
+        hunt_notify('Hunt cancelled', G.C.RED)
     end
 end
 
@@ -223,17 +222,8 @@ Game.update_blind_select = function(self, dt)
                 if has_required_tags() then
                     hunting = false
                     hunt_notify('Required tags found!', G.C.GREEN)
-                else
-                    G.E_MANAGER:add_event(Event({
-                        trigger = 'after',
-                        delay   = 0.4,
-                        func    = function()
-                            if hunting and not hunt_armed then
-                                arm_r_hold()
-                            end
-                            return true
-                        end
-                    }))
+                elseif not hunt_armed then
+                    arm_r_hold()
                 end
             end
 
